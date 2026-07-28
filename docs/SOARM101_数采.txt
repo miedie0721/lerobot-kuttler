@@ -1,0 +1,45 @@
+摇操与数据采集
+查看机械臂端口号
+从臂 COM6
+主臂 COM5
+
+进入了lerobot项目，激活conda环境lerobot
+
+校准：
+校准从动臂：lerobot-calibrate --robot.type=so101_follower --robot.port=COM6 --robot.id=zihao_follower_arm
+校准主动臂：lerobot-calibrate --teleop.type=so101_leader --teleop.port=COM5 --teleop.id=zihao_leader_arm
+
+
+纯摇操：
+lerobot-teleoperate --robot.type=so101_follower --robot.port=COM6 --robot.id=zihao_follower_arm --teleop.type=so101_leader --teleop.port=COM5 --teleop.id=zihao_leader_arm
+
+查看摄像头是否可用：
+lerobot-find-cameras opencv
+
+摇操并开启视频，测试视角  ：
+lerobot-teleoperate --robot.type=so101_follower --robot.port=COM6 --robot.id=zihao_follower_arm --robot.cameras="{ front: {type: opencv, index_or_path: 0, width: 640, height: 480, fps: 30, fourcc: "MJPG"}, side: {type: opencv, index_or_path: 1, width: 640, height: 480, fps: 30, fourcc: "MJPG"}}" --teleop.type=so101_leader --teleop.port=COM5 --teleop.id=zihao_leader_arm --display_data=true
+
+开始采数据：
+lerobot-record \
+  --robot.type=so101_follower \
+  --robot.port=COM6 \
+  --robot.id=zihao_follower_arm \
+  --robot.cameras="{ front: {type: opencv, index_or_path: 0, width: 640, height: 480, fps: 30, fourcc: 'MJPG'}, wrist: {type: opencv, index_or_path: 1, width: 640, height: 480, fps: 30, fourcc: 'MJPG'}}" \
+  --teleop.type=so101_leader \
+  --teleop.port=COM5 \
+  --teleop.id=zihao_leader_arm \
+  --display_data=true \
+  --dataset.repo_id=TommyZihao/lerobot_zihao_dataset_a \
+  --dataset.num_episodes=20 \
+  --dataset.single_task="Place the crumpled paper on the tissue" \
+  --dataset.push_to_hub=false \
+  --dataset.episode_time_s=20 \
+  --dataset.reset_time_s=8
+（接着上次的继续采集：--resume=true，再设置dataset.num_episodes表明这次再采多少组）
+运行时用无换行的一句话命令：
+lerobot-record --robot.type=so101_follower --robot.port=COM6 --robot.id=zihao_follower_arm --robot.cameras="{ front: {type: opencv, index_or_path: 0, width: 640, height: 480, fps: 30, fourcc: MJPG}, wrist: {type: opencv, index_or_path: 1, width: 640, height: 480, fps: 30, fourcc: MJPG}}" --teleop.type=so101_leader --teleop.port=COM5 --teleop.id=zihao_leader_arm --display_data=true --dataset.repo_id=TommyZihao/lerobot_zihao_dataset_a --dataset.num_episodes=20 --dataset.single_task="Place the crumpled paper on the tissue" --dataset.push_to_hub=false --dataset.episode_time_s=25 --dataset.reset_time_s=10
+看到 "Recording episode X" → 立即开始做动作
+完成动作后 → 可以按右箭头提前结束，或等待 25 秒自动结束
+按←键可以重新录制该组episode
+看到 "Reset the environment" → 重置场景 ，等待 10 秒
+录制完成，保存目录：/Users/tommy/.cache/huggingface/lerobot/TommyZihao/lerobot_zihao_dataset_a

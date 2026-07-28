@@ -1,0 +1,49 @@
+环境配置（以下是linux教程，windows教程略）：
+下载miniconda并配置conda源和pip源、创建虚拟环境：
+sudo apt update && sudo apt upgrade -y
+若太慢则换源，参考：https://mirrors.tuna.tsinghua.edu.cn/help/ubuntu/
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+source ~/.bashrc
+conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/
+conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/
+conda config --set show_channel_urls yes
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+conda create -n leorbot060 python=3.12.13
+conda activate lerobot060
+
+激活miniconda（如果命令前面有base了就不需要）：
+source ~/miniconda3/bin/activate
+激活虚拟环境：
+conda activate lerobot060
+
+~~
+
+下载依赖：
+conda install ffmpeg -c conda-forge
+pip install -e ".[feetech]"    # 直接以二次开发模式安装依赖，先安装feetech的，后续需要指定模型的时候再用pip install -e ".[指定toml依赖变量]"补充就是。
+其他要下载的（位于pyproject.toml）：pip install -e ".[core_scripts,kinematics,dataset,pynput-dep]"
+例如要补充toml文件中的变量名为dataset的依赖，则：pip install -e ".[dataset]"
+由于我们会专注于二次开发，所以要pip install -e ".[dataset]"的方式来安装依赖，切勿pip install 'lerobot[dataset]'
+此时默认安装的是cpu版本的torch，再次安装cuda版本的torch进行覆盖（cu128 + torch-2.11.0）：
+pip install torch==2.11.0 torchvision==0.26.0 torchaudio==2.11.0 --index-url https://download.pytorch.org/whl/cu128
+若下载速度太慢，可以先下载离线包，再pip install 3个离线包，离线包地址：https://download.pytorch.org/whl/torch/
+本地也下载了：D:\EmbodimentAI\cuda离线包
+pip install /home/kuttler/torch_offline_pkgs/torch-2.11.0+cu128-cp312-cp312-manylinux_2_28_x86_64.whl
+pip install /home/kuttler/torch_offline_pkgs/torchaudio-2.11.0+cu128-cp312-cp312-manylinux_2_28_x86_64.whl
+pip install /home/kuttler/torch_offline_pkgs/torchvision-0.26.0+cu128-cp312-cp312-manylinux_2_28_x86_64.whl
+
+~~
+
+VLA采集数据、回看数据、清洗数据
+·采集：参考docs/SOARM101_数采.txt
+·回看：https://io-ai.tech/lerobot/
+·清洗：
+lerobot-edit-dataset \
+    --repo_id Tmy/SOARM101_redcard \
+    --new_repo_id Tmy/redcard \
+    --operation.type delete_episodes \
+    --operation.episode_indices "[18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79]"
+一句话：
+lerobot-edit-dataset --repo_id Tmy/SOARM101_redcard --new_repo_id Tmy/redcard --operation.type delete_episodes --operation.episode_indices "[18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79]"
+·lingbotvla-0.0.1训练：参考docs/lingbotvla训练_评估_推理.txt 在lingbot-vla项目上，训练云端进行，推理云-边联合
