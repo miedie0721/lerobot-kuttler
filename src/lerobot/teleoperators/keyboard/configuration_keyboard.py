@@ -42,6 +42,39 @@ class KeyboardEndEffectorTeleopConfig(KeyboardTeleopConfig):
     use_gripper: bool = True
 
 
+@TeleoperatorConfig.register_subclass("keyboard_soarm_ee")
+@dataclass
+class KeyboardSoarmEETeleopConfig(KeyboardTeleopConfig):
+    """Configuration for keyboard end-effector teleoperator for SOARM (SO101).
+
+    Provides keyboard-based pure end-effector control with IK solving
+    for the SO101 arm. Keys modify a target end-effector pose in real-time,
+    and IK is solved each frame to produce joint angles for the robot.
+
+    Key mappings (matching lerobot-kinematics):
+        w / s    : X forward / backward
+        a / d    : Base rotation + / -
+        r / f    : Z up / down
+        q / e    : Roll + / -
+        g / t    : Pitch + / -
+        z / c    : Gripper open / close
+        0        : Reset to home
+
+    Attributes:
+        pos_increment: Translation increment per keypress in meters.
+        rot_increment: Rotation increment per keypress in radians.
+        joint_increment: Joint angle increment for base rotation (radians).
+        gripper_increment: Gripper position increment (motor range 0-100).
+        max_joint_change: Max per-joint angular change per IK step (radians).
+    """
+
+    pos_increment: float = 0.0008
+    rot_increment: float = 0.0032
+    joint_increment: float = 0.005
+    gripper_increment: float = 1.0
+    max_joint_change: float = 0.1
+
+
 @TeleoperatorConfig.register_subclass("keyboard_rover")
 @dataclass
 class KeyboardRoverTeleopConfig(TeleoperatorConfig):

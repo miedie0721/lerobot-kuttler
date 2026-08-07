@@ -67,6 +67,14 @@ def make_teleoperator_from_config(config: TeleoperatorConfig) -> "Teleoperator":
         from .keyboard.teleop_keyboard import KeyboardEndEffectorTeleop
 
         return KeyboardEndEffectorTeleop(config)
+    elif config.type == "keyboard_soarm_ee":
+        from .keyboard.teleop_keyboard import KeyboardSoarmEETeleop
+
+        return KeyboardSoarmEETeleop(config)
+    elif config.type == "spacemouse_soarm_ee":
+        from .spacemouse.teleop_spacemouse import SpaceMouseSoarmEETeleop
+
+        return SpaceMouseSoarmEETeleop(config)
     elif config.type == "homunculus_glove":
         from .homunculus import HomunculusGlove
 

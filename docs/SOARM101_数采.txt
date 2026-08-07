@@ -1,6 +1,6 @@
 摇操与数据采集
 查看机械臂端口号
-从臂 COM6
+从臂 COM6  工控机：/dev/ttyACM0
 主臂 COM5
 
 进入了lerobot项目，激活conda环境lerobot
@@ -9,9 +9,19 @@
 校准从动臂：lerobot-calibrate --robot.type=so101_follower --robot.port=COM6 --robot.id=zihao_follower_arm
 校准主动臂：lerobot-calibrate --teleop.type=so101_leader --teleop.port=COM5 --teleop.id=zihao_leader_arm
 
+save to /home/kuttler/.cache/huggingface/lerobot/calibration/robots/so_follower/kuttler_soarm.json
+
 
 纯摇操：
 lerobot-teleoperate --robot.type=so101_follower --robot.port=COM6 --robot.id=zihao_follower_arm --teleop.type=so101_leader --teleop.port=COM5 --teleop.id=zihao_leader_arm
+
+工控机robot_id：kuttler_soarm
+工控机纯摇操（键盘）：
+lerobot-teleoperate --robot.type=so101_follower --robot.port=/dev/ttyACM0 --robot.id=kuttler_soarm --teleop.type=keyboard_soarm_ee
+wsad(前后左右)、zc(开闭)、qe(roll)、rf(升降)、tg(仰俯)
+工控机纯摇操（spacemouse-soarm）
+lerobot-teleoperate --robot.type=so101_follower --robot.port=/dev/ttyACM0 --robot.id=kuttler_soarm --teleop.type=spacemouse_soarm_ee
+
 
 查看摄像头是否可用：
 lerobot-find-cameras opencv

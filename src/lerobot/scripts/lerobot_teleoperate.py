@@ -119,6 +119,7 @@ from lerobot.teleoperators import (  # noqa: F401
     reachy2_teleoperator,
     rebot_102_leader,
     so_leader,
+    spacemouse,  # noqa: F401
     unitree_g1,
 )
 from lerobot.utils.import_utils import register_third_party_plugins
@@ -195,6 +196,9 @@ def teleop_loop(
         obs = robot.get_observation()
 
         if robot.name == "unitree_g1":
+            teleop.send_feedback(obs)
+
+        if getattr(teleop, "needs_feedback", False):
             teleop.send_feedback(obs)
 
         # Get teleop action

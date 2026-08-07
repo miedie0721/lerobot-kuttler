@@ -413,6 +413,8 @@ ignore = [
 "__init__.py" = ["F401", "F403", "E402"]
 # E402: conditional-import guards (TYPE_CHECKING / is_package_available) must precede the imports they protect
 "src/lerobot/scripts/convert_dataset_v21_to_v30.py" = ["E402"]
+# N802/N806: PascalCase/non-lowercase variable names are standard in robotics kinematics math
+"src/lerobot/teleoperators/keyboard/kinematics_soarm.py" = ["N802", "N806", "N803", "N817"]
 [tool.ruff.lint.isort]
 combine-as-imports = true
 known-first-party = ["lerobot"]
