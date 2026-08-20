@@ -22,7 +22,7 @@ conda activate lerobot060
 下载依赖：
 conda install ffmpeg -c conda-forge
 pip install -e ".[feetech]"    # 直接以二次开发模式安装依赖，先安装feetech的，后续需要指定模型的时候再用pip install -e ".[指定toml依赖变量]"补充就是。
-其他要下载的（位于pyproject.toml）：pip install -e ".[core_scripts,kinematics,dataset,pynput-dep]"
+其他要下载的（位于pyproject.toml）：pip install -e ".[hardware, core_scripts,kinematics,dataset]"
 例如要补充toml文件中的变量名为dataset的依赖，则：pip install -e ".[dataset]"
 由于我们会专注于二次开发，所以要pip install -e ".[dataset]"的方式来安装依赖，切勿pip install 'lerobot[dataset]'
 此时默认安装的是cpu版本的torch，再次安装cuda版本的torch进行覆盖（cu128 + torch-2.11.0）：

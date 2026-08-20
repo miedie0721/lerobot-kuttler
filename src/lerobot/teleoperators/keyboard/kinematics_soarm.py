@@ -90,8 +90,8 @@ SO101_NUM_JOINTS = 4
 
 SO101_QLIM = np.array(
     [
-        [-1.57, -1.57, -1.5, -3.14158],  # lower bounds
-        [1.57, 1.57, 1.5, 3.14158],      # upper bounds
+        [-3.1, 0.0, -1.375, -1.57],  # lower bounds（硬件真实关节范围）
+        [0.0, 3.1, 1.51, 3.1],       # upper bounds（wrist_flex 上限取 1.51，覆盖 home 的 86.11°）
     ],
     dtype=np.float64,
 )

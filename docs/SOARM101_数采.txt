@@ -1,19 +1,19 @@
 摇操与数据采集
-查看机械臂端口号
+查看机械臂端口号 lerobot-find-port
 从臂 COM6  工控机：/dev/ttyACM0
-主臂 COM5
+主臂 COM5  工控机：/dev/ttyACM1
 
 进入了lerobot项目，激活conda环境lerobot
 
 校准：
-校准从动臂：lerobot-calibrate --robot.type=so101_follower --robot.port=COM6 --robot.id=zihao_follower_arm
-校准主动臂：lerobot-calibrate --teleop.type=so101_leader --teleop.port=COM5 --teleop.id=zihao_leader_arm
+校准从动臂：lerobot-calibrate --robot.type=so101_follower --robot.port=/dev/ttyACM0 --robot.id=kuttler_soarm
+校准主动臂：lerobot-calibrate --teleop.type=so101_leader --teleop.port=/dev/ttyACM1 --teleop.id=kuttler_leader_arm
 
 save to /home/kuttler/.cache/huggingface/lerobot/calibration/robots/so_follower/kuttler_soarm.json
 
 
 纯摇操：
-lerobot-teleoperate --robot.type=so101_follower --robot.port=COM6 --robot.id=zihao_follower_arm --teleop.type=so101_leader --teleop.port=COM5 --teleop.id=zihao_leader_arm
+lerobot-teleoperate --robot.type=so101_follower --robot.port=/dev/ttyACM0 --robot.id=kuttler_soarm --teleop.type=so101_leader --teleop.port=/dev/ttyACM1 --teleop.id=kuttler_leader_arm
 
 工控机robot_id：kuttler_soarm
 工控机纯摇操（键盘）：
@@ -26,8 +26,11 @@ lerobot-teleoperate --robot.type=so101_follower --robot.port=/dev/ttyACM0 --robo
 查看摄像头是否可用：
 lerobot-find-cameras opencv
 
-摇操并开启视频，测试视角  ：
+摇操并开启视频，测试视角(windows,主从动臂)  ：
 lerobot-teleoperate --robot.type=so101_follower --robot.port=COM6 --robot.id=zihao_follower_arm --robot.cameras="{ front: {type: opencv, index_or_path: 0, width: 640, height: 480, fps: 30, fourcc: "MJPG"}, side: {type: opencv, index_or_path: 1, width: 640, height: 480, fps: 30, fourcc: "MJPG"}}" --teleop.type=so101_leader --teleop.port=COM5 --teleop.id=zihao_leader_arm --display_data=true
+
+摇操并开启视频，测试视角（ubuntu工控机，spacemouse-soarm）：
+lerobot-teleoperate --robot.type=so101_follower --robot.port=/dev/ttyACM0 --robot.id=kuttler_soarm --robot.cameras="{ front: {type: opencv, index_or_path: 0, width: 800, height: 600, fps: 30, fourcc: "MJPG"}, side: {type: opencv, index_or_path: 2, width: 640, height: 480, fps: 30, fourcc: "MJPG"}}" --teleop.type=spacemouse_soarm_ee --display_data=true
 
 开始采数据：
 lerobot-record \
