@@ -223,7 +223,15 @@ class TrainPipelineConfig(HubMixin):
         if self.reward_model is not None:
             self.reward_model.pretrained_path = str(policy_dir)
 
-    def validate(self) -> None:
+    def validate(self, *, allow_existing_output_dir: bool = False) -> None:
+        """Validate the training configuration.
+
+        Args:
+            allow_existing_output_dir: If True, skip the guard that raises when
+                ``output_dir`` already exists. Useful for read-only companion
+                processes (e.g. the RL actor / eval) that share the learner's
+                output directory.
+        """
         available_contexts = multiprocessing.get_all_start_methods()
         if (
             self.dataloader_multiprocessing_context is not None
@@ -256,7 +264,12 @@ class TrainPipelineConfig(HubMixin):
             else:
                 self.job_name = f"{self.env.type}_{active_cfg.type}"
 
-        if not self.resume and isinstance(self.output_dir, Path) and self.output_dir.is_dir():
+        if (
+            not allow_existing_output_dir
+            and not self.resume
+            and isinstance(self.output_dir, Path)
+            and self.output_dir.is_dir()
+        ):
             raise FileExistsError(
                 f"Output directory {self.output_dir} already exists and resume is {self.resume}. "
                 f"Please change your output directory so that {self.output_dir} is not overwritten."

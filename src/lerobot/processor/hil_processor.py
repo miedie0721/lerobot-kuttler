@@ -87,7 +87,7 @@ def _check_teleop_with_events(teleop: "Teleoperator") -> None:
     if not isinstance(teleop, HasTeleopEvents):
         raise TypeError(
             f"Teleoperator {type(teleop).__name__} must implement get_teleop_events() method. "
-            f"Compatible teleoperators: GamepadTeleop, KeyboardEndEffectorTeleop"
+            f"Compatible teleoperators: GamepadTeleop, KeyboardEndEffectorTeleop, SpaceMouseSoarmHILTeleop"
         )
 
 
@@ -119,7 +119,15 @@ class AddTeleopActionAsComplimentaryDataStep(ComplementaryDataProcessorStep):
             `teleop_action` key.
         """
         new_complementary_data = dict(complementary_data)
-        new_complementary_data[TELEOP_ACTION_KEY] = self.teleop_device.get_action()
+        if self.teleop_device is not None:
+            new_complementary_data[TELEOP_ACTION_KEY] = self.teleop_device.get_action()
+        else:
+            # 无遥操设备（如纯 replay）时输出中性动作，避免下游覆盖录制动作
+            new_complementary_data[TELEOP_ACTION_KEY] = {
+                "delta_x": 0.0,
+                "delta_y": 0.0,
+                "delta_z": 0.0,
+            }
         return new_complementary_data
 
     def transform_features(
@@ -146,7 +154,8 @@ class AddTeleopEventsAsInfoStep(InfoProcessorStep):
 
     def __post_init__(self):
         """Validates that the provided teleoperator supports events after initialization."""
-        _check_teleop_with_events(self.teleop_device)
+        if self.teleop_device is not None:
+            _check_teleop_with_events(self.teleop_device)
 
     def info(self, info: dict) -> dict:
         """
@@ -160,8 +169,9 @@ class AddTeleopEventsAsInfoStep(InfoProcessorStep):
         """
         new_info = dict(info)
 
-        teleop_events = self.teleop_device.get_teleop_events()
-        new_info.update(teleop_events)
+        if self.teleop_device is not None:
+            teleop_events = self.teleop_device.get_teleop_events()
+            new_info.update(teleop_events)
         return new_info
 
     def transform_features(

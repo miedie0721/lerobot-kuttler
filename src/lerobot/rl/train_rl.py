@@ -40,8 +40,8 @@ class TrainRLServerPipelineConfig(TrainPipelineConfig):
     # Fraction sampled from online replay when using OnlineOfflineMixer.
     online_ratio: float = 0.5
 
-    def validate(self) -> None:
-        super().validate()
+    def validate(self, *, allow_existing_output_dir: bool = False) -> None:
+        super().validate(allow_existing_output_dir=allow_existing_output_dir)
 
         if self.algorithm is None:
             self.algorithm = make_algorithm_config("sac")

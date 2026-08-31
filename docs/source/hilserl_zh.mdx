@@ -42,6 +42,13 @@ HIL-SERL 是一种样本高效的强化学习算法，将人类演示、在线�
 pip install -e ".[hilserl]"
 ```
 
+> **网络提示**：工控机若无法直连 huggingface.co，设置镜像端点后再运行（训练需要下载
+> `lerobot/resnet10` 视觉编码器，仅首次运行需要联网）：
+>
+> ```bash
+> export HF_ENDPOINT=https://hf-mirror.com
+> ```
+
 相关文件：`pyproject.toml`（定义了 `hilserl` 扩展依赖，包括 gymnasium、protobuf、grpcio 等）
 
 ---
@@ -53,7 +60,7 @@ pip install -e ".[hilserl]"
 | 硬件 | 说明 |
 |------|------|
 | 机器人 + 电机驱动 | 跟随臂（如 SO-100、SO-101），已校准好电机 ID 和 CAN 总线 |
-| 主控臂 / 游戏手柄 | 如SO-101 主控臂或罗技游戏手柄，用于遥操作和干预 如果是spacemouse、键盘 则需要额外配置 |
+| 主控臂 / 游戏手柄 / SpaceMouse | 如SO-101 主控臂、罗技游戏手柄或 SpaceMouse（`spacemouse_soarm_hil`，本仓库已实现，见步骤 3b），用于遥操作和干预 |
 | 相机 |  USB 摄像头 |
 | GPU 电脑 | NVIDIA GPU（显存 >= 8GB 推荐），电脑连接机器人和相机 |
 
@@ -159,6 +166,51 @@ python -m lerobot.rl.gym_manipulator --config_path configs/env_config_record.jso
 - `src/lerobot/rl/gym_manipulator.py`（环境入口，定义 GymManipulatorConfig）
 - `src/lerobot/envs/configs.py`（HILSerlRobotEnvConfig、DatasetConfig 等）
 - `src/lerobot/rl/processor/hil_processor.py`（InterventionActionProcessorStep 等）
+
+---
+
+### 步骤 3b：SpaceMouse + SO101 配置（本仓库已实现）
+
+如果使用 SpaceMouse 摇操 SO101 完成 HIL-SERL，仓库已内置现成支持，无需 gamepad：
+
+**遥操类**：`spacemouse_soarm_hil`（`src/lerobot/teleoperators/spacemouse/teleop_spacemouse_hil.py`）
+- 输出 3 自由度末端平移增量 `delta_x/delta_y/delta_z`（与 gamepad 协议一致，IK 由 RL 流水线统一求解，遥操器无状态）
+- 摇杆移动 = 干预接管（`is_intervention`），松手即交还策略控制
+- **右键 = 成功（reward=1，自动结束 episode）**
+- **左键 = 失败/重录本集**
+- 不使用夹爪（`use_gripper=false`，夹爪冻结在开跑前的实际开度）
+
+**现成配置文件**（改 port / camera index / dataset repo_id / task 后直接用）：
+
+```bash
+# 1. 录制演示（mode=record）
+python -m lerobot.rl.gym_manipulator --config_path src/lerobot/configs/env_config_so101_spacemouse.json
+
+# 2. 训练（learner + actor 两个终端，同一配置文件）
+python -m lerobot.rl.learner --config_path src/lerobot/configs/train_config_hilserl_so101.json
+python -m lerobot.rl.actor  --config_path src/lerobot/configs/train_config_hilserl_so101.json
+```
+
+配置要点：
+- `env.robot`：`so101_follower`（port、摄像头、`use_degrees=true`、`max_relative_target` 安全钳制）
+- `env.teleop.type`：`spacemouse_soarm_hil`
+- `env.processor.inverse_kinematics`：URDF 用 `src/lerobot/teleoperators/spacemouse/urdfs/so101_new_calib.urdf`；`end_effector_bounds` 与 `end_effector_step_sizes` 需按实际任务工作空间标定（见步骤 2）
+- `env.processor.reset.fixed_reset_joint_positions`：默认填的是 SpaceMouse 摇操的推荐初始位姿（角度值）
+- 若使用奖励分类器替代人工右键标注，在 `env.processor.reward_classifier.pretrained_path` 填入模型路径
+
+> **注意**：`hilserl` 官方默认教程使用 gamepad（`control_mode: "gamepad"`），
+> 使用 SpaceMouse 时直接把 `env.teleop` 换成上面的配置即可，处理器流水线不变。
+
+**摄像头实时显示**：采集/训练时会在屏幕上弹出 `front`、`side` 相机窗口
+（`env.processor.observation.display_cameras=true`）。基础依赖是
+`opencv-python-headless`（无 GUI 无法弹窗），需要先装 GUI 版 OpenCV：
+
+```bash
+pip install "lerobot[opencv-gui]"
+# 等价于: pip install "opencv-python>=4.9.0,<4.14.0"（会就地替换 headless 版）
+```
+
+未安装时程序不会报错，仅提示一次告警并跳过弹窗。
 
 ---
 
@@ -325,26 +377,24 @@ Actor 的行为：
 
 ### 步骤 8：导出模型用于推理
 
-**目的**：训练完成后，从 checkpoint 中提取策略权重，脱离 Learner-Actor 训练框架，直接在推理脚本中加载使用。
+**目的**：训练完成后，从 checkpoint 中提取策略权重，脱离 Learner-Actor 训练框架，直接在真机上推理评估。
 
-**操作方法**：训练过程中 Learner 会自动保存 checkpoint 到 `output_dir`。取出最优 checkpoint，在推理脚本中加载：
+**操作方法**：训练过程中 Learner 会自动保存 checkpoint 到 `output_dir`，并维护 `checkpoints/latest` 软链接。用仓库内置的评估脚本在真机上跑策略（默认执行策略均值 = 确定性推理）：
 
-```python
-from lerobot.policies.gaussian_actor import GaussianActorPolicy
-
-# 加载训练好的 checkpoint
-policy = GaussianActorPolicy.from_pretrained("path/to/checkpoint")
-policy.eval()
-
-# 推理循环
-for obs in get_observations():
-    action = policy.select_action(obs)
-    robot.send_action(action)
+```bash
+python -m lerobot.rl.eval_real_robot \
+  --config_path src/lerobot/configs/train_config_hilserl_so101.json \
+  --policy.pretrained_path=outputs/train/hilserl_so101/checkpoints/latest/pretrained_model \
+  --eval.n_episodes=10
 ```
 
+- 脚本复用与 actor 相同的处理器流水线（观测裁剪/归一化 → 策略 → IK → 关节指令），并保留遥操事件：SpaceMouse **右键=标记成功**、**左键=终止本集**，干预摇杆仍可随时接管
+- 需要随机采样（评估探索性）时加 `--stochastic`
+- 每集结束输出 reward/success/steps，最后打印总成功率
+
 相关文件：
-- `src/lerobot/policies/factory.py`（策略工厂，支持 `from_pretrained`）
-- `src/lerobot/policies/pretrained.py`（PreTrainedPolicy 基类，包含 HubMixin 的 save/load）
+- `src/lerobot/rl/eval_real_robot.py`（真机推理评估脚本）
+- `src/lerobot/policies/gaussian_actor/`（策略网络，`from_pretrained` 加载 checkpoint）
 
 ---
 

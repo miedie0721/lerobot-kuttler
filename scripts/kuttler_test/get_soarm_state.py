@@ -35,15 +35,23 @@ def _rad_to_deg_state(state: dict[str, float]) -> dict[str, float]:
     }
 
 
-def get_soarm_state(robot_port: str, robot_id: str) -> dict[str, float]:
-    """读取 SO101 当前关节角，返回弧度（夹爪为 0-100）。"""
+def get_soarm_state(robot_port: str, robot_id: str) -> dict[str, dict[str, float] | list[float]]:
+    """读取 SO101 当前关节角。
+
+    返回 {"rad": {INIT_STATE 格式的弧度 dict}, "deg": [按关节顺序的角度列表]}，
+    夹爪 0-100 不转换。角度列表顺序：shoulder_pan, shoulder_lift, elbow_flex,
+    wrist_flex, wrist_roll, gripper。
+    """
     robot = make_robot_from_config(SO101FollowerConfig(port=robot_port, id=robot_id))
     robot.connect()
     try:
         observation = robot.get_observation()
-        return _deg_to_rad_state(
+        rad_state = _deg_to_rad_state(
             {key: value for key, value in observation.items() if key.endswith(".pos")}
         )
+        deg_state = _rad_to_deg_state(rad_state)
+        deg_list = [float(deg_state[key]) for key in [*_ARM_JOINT_KEYS, "gripper.pos"]]
+        return {"rad": rad_state, "deg": deg_list}
     finally:
         robot.disconnect()
 
@@ -103,21 +111,16 @@ def move_soarm_to_state(
 
 
 # 当前机械臂实际 state（弧度），2026-07-24 读取自 /dev/ttyACM0
-INIT_STATE = {
-    "shoulder_pan.pos": -0.054,
-    "shoulder_lift.pos": -0.758,
-    "elbow_flex.pos": 0.950,
-    "wrist_flex.pos": 0.8216,
-    "wrist_roll.pos": -1.504,
-    "gripper.pos": 5.66,
-}
-
+INIT_STATE = {'shoulder_pan.pos': '-0.056', 'shoulder_lift.pos': '-0.327', 'elbow_flex.pos': '0.626', 'wrist_flex.pos': '1.474', 'wrist_roll.pos': '-1.484', 'gripper.pos': '5.456'}
 
 if __name__ == "__main__":
-    # 读取当前 state（弧度），print 保留 3 位小数
+    # 读取当前 state（弧度 + 角度），print 保留 3 位小数
     state = get_soarm_state(robot_port="/dev/ttyACM0", robot_id="kuttler_soarm")
-    print({key: f"{value:.3f}" for key, value in state.items()})
+    print("rad:", {key: f"{value:.3f}" for key, value in state["rad"].items()})
+    print("deg:", "[" + ", ".join(f"{value:.3f}" for value in state["deg"]) + "]")
 
-    # 移动到推荐初始 state（弧度），平滑过渡，用时 2 秒
-    move_soarm_to_state(INIT_STATE, robot_port="/dev/ttyACM0", robot_id="kuttler_soarm", duration=2.0)
-    print(get_soarm_state(robot_port="/dev/ttyACM0", robot_id="kuttler_soarm"))
+    # # 移动到推荐初始 state（弧度），平滑过渡，用时 2 秒
+    # move_soarm_to_state(INIT_STATE, robot_port="/dev/ttyACM0", robot_id="kuttler_soarm", duration=2.0)
+    # state = get_soarm_state(robot_port="/dev/ttyACM0", robot_id="kuttler_soarm")
+    # print("rad:", {key: f"{value:.3f}" for key, value in state["rad"].items()})
+    # print("deg:", [f"{value:.3f}" for value in state["deg"]])

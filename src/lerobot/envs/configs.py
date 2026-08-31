@@ -281,10 +281,15 @@ class GripperConfig:
 class ResetConfig:
     """Configuration for environment reset behavior."""
 
-    fixed_reset_joint_positions: Any | None = None
+    fixed_reset_joint_positions: list[float] | None = None
     reset_time_s: float = 5.0
     control_time_s: float = 20.0
     terminate_on_success: bool = True
+    # 复位前先把末端沿世界 Z 轴正向（垂直向上）抬升的距离（米），再插值回初始位姿。
+    # 用于插孔/夹持类任务：被插/被夹的物体需要先沿垂直方向"拔出"，避免横向移动时被孔碰掉。
+    reset_lift_offset_z: float = 0.0
+    # 抬升阶段保持不动的关节名（如 wrist_flex），避免抬升时改变手腕角度碰掉物体。
+    reset_lift_frozen_joints: list[str] = field(default_factory=lambda: ["wrist_flex"])
 
 
 @dataclass

@@ -59,3 +59,18 @@ class SpaceMouseSoarmEETeleopConfig(TeleoperatorConfig):
     home_hold_duration: float | None = None
     # 摇操启动时是否自动缓速移动到推荐初始位姿（init_qpos_home）。
     home_on_start: bool = True
+
+
+@TeleoperatorConfig.register_subclass("spacemouse_soarm_hil")
+@dataclass
+class SpaceMouseSoarmHILTeleopConfig(SpaceMouseSoarmEETeleopConfig):
+    """SOARM(SO101) 机械臂的 SpaceMouse HIL-SERL 遥操作器配置。
+
+    输出末端平移增量（delta_x/delta_y/delta_z ∈ [-1,1]，各轴经死区重缩放），
+    增量由 RL 流水线的 ``end_effector_step_sizes`` 缩放为米、IK 统一求解，
+    遥操器自身无状态。按键：左键 → 失败/重录本集，右键 → 标记成功（reward=1）。
+
+    有效字段：``deadzone``、``input_timeout_s``、``read_drain_count``。
+    继承自 ``SpaceMouseSoarmEETeleopConfig`` 的其余字段（translation_step_m、
+    rotation_step_rad、home_* 等）在 HIL 模式下不使用。
+    """

@@ -124,7 +124,7 @@ class SpaceMouseSoarmEETeleop(Teleoperator):
         # wrist_roll=-86.17°, gripper=5.66）作为"左键复位"目标，
         # 以及未收到反馈时的兜底初始位姿。
         self.init_qpos_home = np.array(
-            [-0.054, -0.758, 0.950, 0.8216, -1.504, 5.66],
+            [-0.061, -0.692, 1.011, 1.156, -1.500, 5.732],
             dtype=np.float64,
         )
         # current_qpos: 从动臂当前关节角（IK 的起始点，由反馈更新）

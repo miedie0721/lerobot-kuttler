@@ -178,6 +178,11 @@ robstride = ["lerobot[can-dep]"]
 openarms = ["lerobot[damiao]"]
 gamepad = ["lerobot[pygame-dep]", "hidapi>=0.14.0,<0.15.0"]
 spacemouse = ["pyspacemouse>=2.0.0,<3.0.0", "lerobot[scipy-dep]"]
+# GUI-enabled OpenCV for live camera windows (HIL-SERL record/train display, `RobotEnv.render`).
+# Both this and the base `opencv-python-headless` provide `cv2`; the GUI build is a superset
+# (headless + highgui), so installing it alongside yields the GUI build on `import cv2`.
+# Kept OUT of `all` so headless CI/server installs stay free of the libGL/libglib GUI deps.
+opencv-gui = ["opencv-python>=4.9.0,<4.14.0"]
 hopejr = ["lerobot[feetech]", "lerobot[pygame-dep]"]
 lekiwi = ["lerobot[feetech]", "lerobot[pyzmq-dep]"]
 unitree_g1 = [

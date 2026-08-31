@@ -1,0 +1,87 @@
+{
+  "env": {
+    "name": "real_robot",
+    "fps": 30,
+    "robot": {
+      "type": "so101_follower",
+      "id": "kuttler_soarm",
+      "port": "/dev/ttyACM0",
+      "use_degrees": true,
+      "max_relative_target": 15.0,
+      "cameras": {
+        "front": {
+          "type": "opencv",
+          "index_or_path": 0,
+          "width": 640,
+          "height": 480,
+          "fps": 30,
+          "fourcc": "YUYV",
+          "color_mode": "rgb"
+        },
+        "side": {
+          "type": "opencv",
+          "index_or_path": 2,
+          "width": 640,
+          "height": 480,
+          "fps": 30,
+          "fourcc": "YUYV",
+          "color_mode": "rgb"
+        }
+      }
+    },
+    "teleop": {
+      "type": "spacemouse_soarm_hil",
+      "deadzone": 0.02,
+      "input_timeout_s": 0.08,
+      "read_drain_count": 32
+    },
+    "processor": {
+      "control_mode": "spacemouse_soarm_hil",
+      "observation": {
+        "display_cameras": true
+      },
+      "image_preprocessing": {
+        "crop_params_dict": {},
+        "resize_size": [128, 128]
+      },
+      "gripper": {
+        "use_gripper": false,
+        "gripper_penalty": 0.0
+      },
+      "reset": {
+        "fixed_reset_joint_positions": [-5.407, -40.088, 50.462, 83.385, -85.495, 5.801],
+        "reset_time_s": 8.0,
+        "control_time_s": 15.0,
+        "terminate_on_success": true,
+        "reset_lift_offset_z": 0.02,
+        "reset_lift_frozen_joints": ["wrist_flex"]
+      },
+      "inverse_kinematics": {
+        "urdf_path": "src/lerobot/teleoperators/spacemouse/urdfs/so101_new_calib.urdf",
+        "target_frame_name": "gripper_frame_link",
+        "end_effector_step_sizes": {
+          "x": 0.002,
+          "y": 0.002,
+          "z": 0.002
+        },
+        "end_effector_bounds": {
+          "min": [-0.22, -0.4, -0.15],
+          "max": [0.4, 0.4, 0.31]
+        }
+      },
+      "reward_classifier": null,
+      "max_gripper_pos": 100.0
+    }
+  },
+  "dataset": {
+    "repo_id": "tmy/so101_task",
+    "task": "把透明塞子插到黑色孔里",
+    "root": null,
+    "num_episodes_to_record": 10,
+    "replay_episode": null,
+    "replay_mode": "action",
+    "push_to_hub": false
+  },
+  "mode": "replay",
+  "device": "cpu"
+}

@@ -14,7 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .configuration_spacemouse import SpaceMouseSoarmEETeleopConfig
+from .configuration_spacemouse import SpaceMouseSoarmEETeleopConfig, SpaceMouseSoarmHILTeleopConfig
 from .teleop_spacemouse import SpaceMouseSoarmEETeleop
+from .teleop_spacemouse_hil import SpaceMouseSoarmHILTeleop
 
-__all__ = ["SpaceMouseSoarmEETeleop", "SpaceMouseSoarmEETeleopConfig"]
+__all__ = [
+    "SpaceMouseSoarmEETeleop",
+    "SpaceMouseSoarmEETeleopConfig",
+    "SpaceMouseSoarmHILTeleop",
+    "SpaceMouseSoarmHILTeleopConfig",
+]

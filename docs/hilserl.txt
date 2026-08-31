@@ -1,0 +1,32 @@
+1、看端口
+lerobot-find-port   # 记下从动臂端口，如 /dev/ttyACM0
+
+2、编辑 src/lerobot/configs/env_config_so101_spacemouse.json 和 train_config_hilserl_so101.json：
+env.robot.port（真实端口）、env.robot.cameras.front.index_or_path（相机序号）
+dataset.repo_id（如 kuttler/so101_task）、dataset.task（一句话任务描述）
+确认 env.processor.reset.fixed_reset_joint_positions = 你的复位位姿（角度）
+reset_lift_offset_z，设置抬升
+
+3、采集（SpaceMouse 摇操录 demo，存Buffer）
+摇杆=控制末端平移；右键=成功结束本集，左键=失败重录本集；每集结束机器人自动复位
+python -m lerobot.rl.gym_manipulator --config_path src/lerobot/configs/env_config_so101_spacemouse.json
+录完 num_episodes_to_record 集后自动保存数据集。
+
+4、（可选）图像裁剪 ROI
+python -m lerobot.rl.crop_dataset_roi --repo-id tmy/so101_task
+把输出的 crop_params_dict 填进训练 JSON 的 env.processor.image_preprocessing.crop_params_dict
+
+5、训练（learner + actor 两个终端）
+# 终端1：先启动 learner（GPU 训练，自动存 checkpoint 到 outputs/train/hilserl_so101/checkpoints/）
+python -m lerobot.rl.learner --config_path src/lerobot/configs/train_config_hilserl_so101.json
+# 终端2：再启动 actor（真机执行+干预采集）
+python -m lerobot.rl.actor --config_path src/lerobot/configs/train_config_hilserl_so101.json
+训练中：策略自主执行 → 摇杆随时干预接管（松手交还）→ 右键标记成功（reward=1 结束本集）→ 左键终止。WandB 看 Episodic reward、Intervention rate
+
+6、推理评估
+python -m lerobot.rl.eval_real_robot \
+  --config_path src/lerobot/configs/train_config_hilserl_so101.json \
+  --policy.pretrained_path=outputs/train/hilserl_so101/checkpoints/latest/pretrained_model \
+  --eval.n_episodes=10
+
+后续改进为SiLRI 

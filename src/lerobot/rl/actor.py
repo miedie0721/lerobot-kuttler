@@ -88,7 +88,7 @@ from lerobot.configs import parser
 from lerobot.policies import make_policy, make_pre_post_processors
 from lerobot.processor import TransitionKey
 from lerobot.robots import so_follower  # noqa: F401
-from lerobot.teleoperators import gamepad, so_leader  # noqa: F401
+from lerobot.teleoperators import gamepad, so_leader, spacemouse  # noqa: F401
 from lerobot.teleoperators.utils import TeleopEvents
 from lerobot.utils.device_utils import get_safe_torch_device
 from lerobot.utils.process import ProcessSignalHandler, ensure_multiprocessing_start_method
@@ -121,7 +121,8 @@ from .train_rl import TrainRLServerPipelineConfig
 def actor_cli(cfg: TrainRLServerPipelineConfig):
     # Fail fast with a friendly error if the optional ``hilserl`` extra is missing.
     require_package("grpcio", extra="hilserl", import_name="grpc")
-    cfg.validate()
+    # The actor shares the learner's output_dir (it only writes logs there).
+    cfg.validate(allow_existing_output_dir=True)
     display_pid = False
     if not use_threads(cfg):
         ensure_multiprocessing_start_method(cfg.policy.concurrency.multiprocessing_context)
@@ -295,7 +296,9 @@ def act_with_policy(
     # Add counters for intervention rate calculation
     episode_intervention_steps = 0
     episode_total_steps = 0
+    episode_idx = 0
 
+    logging.info("[ACTOR] Episode 1 START — policy is acting; use the SpaceMouse stick to intervene")
     policy_timer = TimerManager("Policy inference", log=False)
 
     for interaction_step in range(cfg.policy.online_steps):
@@ -382,6 +385,23 @@ def act_with_policy(
         transition = new_transition
 
         if done or truncated:
+            info = transition[TransitionKey.INFO]
+            success = bool(info.get(TeleopEvents.SUCCESS, False))
+            terminate = bool(info.get(TeleopEvents.TERMINATE_EPISODE, False))
+
+            if success:
+                end_reason = "SUCCESS (right button reward=1)"
+            elif terminate:
+                end_reason = "FAILED (left button, reward=0)"
+            elif truncated:
+                end_reason = "TIMEOUT (time limit, reward=0)"
+            else:
+                end_reason = "TERMINATED"
+
+            logging.info(
+                f"[ACTOR] Episode {episode_idx + 1} END: {end_reason} | steps={episode_total_steps}"
+                f" | reward={sum_reward_episode}"
+            )
             logging.info(f"[ACTOR] Global step {interaction_step}: Episode reward: {sum_reward_episode}")
 
             update_policy_parameters(algorithm=algorithm, parameters_queue=parameters_queue, device=device)
@@ -419,8 +439,10 @@ def act_with_policy(
             episode_intervention = False
             episode_intervention_steps = 0
             episode_total_steps = 0
+            episode_idx += 1
 
             transition = reset_and_build_transition(online_env, env_processor, action_processor)
+            logging.info(f"[ACTOR] Episode {episode_idx + 1} START — policy is acting")
 
         if cfg.env.fps is not None:
             dt_time = time.perf_counter() - start_time
